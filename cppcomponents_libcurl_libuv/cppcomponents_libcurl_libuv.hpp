@@ -17,7 +17,9 @@ namespace cppcomponents_libcurl_libuv{
 		// str must be null-terminated
 		void Append(cppcomponents::cr_string str);
 
-		CPPCOMPONENTS_CONSTRUCT(ISlist, Append);
+		void* GetNative();
+
+		CPPCOMPONENTS_CONSTRUCT(ISlist, Append, GetNative);
 	};
 
 	inline std::string slist_id(){ return "cppcomponents_libcurl_libuv_dll!Slist"; }
@@ -38,9 +40,10 @@ namespace cppcomponents_libcurl_libuv{
 		void AddFileAsBuffer(cppcomponents::use<cppcomponents::IBuffer> buffer, cppcomponents::cr_string filename, cppcomponents::cr_string content_type);
 
 		void AddContentHeader(cppcomponents::use<ISlist> list);
+		void* GetNative();
 
 		CPPCOMPONENTS_CONSTRUCT(IForm, AddNameValue, AddNameFileContents, AddFileNoName, AddFileNoNameWithContentType,
-			AddFileWithName, AddFileWithNameContentType, AddFileAsBuffer,AddContentHeader);
+			AddFileWithName, AddFileWithNameContentType, AddFileAsBuffer, AddContentHeader, GetNative);
 	};
 
 	inline std::string form_id(){ return "cppcomponents_libcurl_libuv_dll!Form"; }
@@ -52,8 +55,9 @@ namespace cppcomponents_libcurl_libuv{
 		void SetPointerOption(std::int32_t option, void* parameter);
 		void SetInt64Option(std::int32_t option, std::int64_t parameter);
 		void SetFunctionOption(std::int32_t option, cppcomponents::use<cppcomponents::InterfaceUnknown> function);
+		void* GetNative();
 
-		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption);
+		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption, GetNative);
 
 	};
 	inline std::string easy_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }
@@ -85,8 +89,9 @@ namespace cppcomponents_libcurl_libuv{
 	struct IMulti :cppcomponents::define_interface<cppcomponents::uuid<0xc05815c2, 0xef99, 0x40cb, 0xafe5, 0x35cafdefe834>>{
 		cppcomponents::Future<cppcomponents::use<IResponse>> Add(cppcomponents::use<IEasy>);
 		void Remove(cppcomponents::use<IEasy>);
+		void* GetNative();
 
-		CPPCOMPONENTS_CONSTRUCT(IMulti, Add, Remove);
+		CPPCOMPONENTS_CONSTRUCT(IMulti, Add, Remove,GetNative);
 
 	};
 
