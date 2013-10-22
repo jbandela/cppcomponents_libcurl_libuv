@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.20827.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcurl_libuv_msvc_project", "libcurl_libuv_msvc_project\libcurl_libuv_msvc_project.vcxproj", "{2A9B370F-4618-40CD-A2E7-F5F7D7E5223E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cppcomponents_libcurl_libuv_dll", "cppcomponents_libcurl_libuv_dll\cppcomponents_libcurl_libuv_dll.vcxproj", "{FB5D3489-1C51-42F0-89F2-60E9E17263D8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2A9B370F-4618-40CD-A2E7-F5F7D7E5223E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2A9B370F-4618-40CD-A2E7-F5F7D7E5223E}.Debug|Win32.Build.0 = Debug|Win32
+		{2A9B370F-4618-40CD-A2E7-F5F7D7E5223E}.Release|Win32.ActiveCfg = Release|Win32
+		{2A9B370F-4618-40CD-A2E7-F5F7D7E5223E}.Release|Win32.Build.0 = Release|Win32
+		{FB5D3489-1C51-42F0-89F2-60E9E17263D8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FB5D3489-1C51-42F0-89F2-60E9E17263D8}.Debug|Win32.Build.0 = Debug|Win32
+		{FB5D3489-1C51-42F0-89F2-60E9E17263D8}.Release|Win32.ActiveCfg = Release|Win32
+		{FB5D3489-1C51-42F0-89F2-60E9E17263D8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
