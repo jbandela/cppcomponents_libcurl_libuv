@@ -57,6 +57,10 @@ namespace cppcomponents_libcurl_libuv{
 		void SetFunctionOption(std::int32_t option, cppcomponents::use<cppcomponents::InterfaceUnknown> function);
 		void* GetNative();
 
+		void StorePrivate(void* key, cppcomponents::use<cppcomponents::InterfaceUnknown>);
+		cppcomponents::use<cppcomponents::InterfaceUnknown> GetPrivate(void* key);
+		bool RemovePrivate(void* key);
+
 		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption, GetNative);
 
 	};
@@ -148,6 +152,22 @@ namespace cppcomponents_libcurl_libuv{
 
 	};
 
+
+	namespace Callbacks{
+
+		typedef cppcomponents::delegate < std::size_t(char* ptr, std::size_t size,
+			std::size_t nmemb)> WriteFunction;
+		typedef cppcomponents::delegate < std::size_t(void* ptr, std::size_t size,
+			std::size_t nmemb)> ReadFunction;
+		typedef cppcomponents::delegate < std::size_t(double dltotal, double dlnow, 
+			double ultotal, double ulnow)> ProgressFunction;
+		typedef cppcomponents::delegate < std::size_t(void* ptr, std::size_t size,
+			std::size_t nmemb)> HeaderFunction;
+
+
+
+
+	}
 
 
 
