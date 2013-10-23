@@ -91,8 +91,8 @@ namespace cppcomponents_libcurl_libuv{
 	}
 
 	struct IMulti :cppcomponents::define_interface<cppcomponents::uuid<0xc05815c2, 0xef99, 0x40cb, 0xafe5, 0x35cafdefe834>>{
-		void Add(cppcomponents::use<IEasy>,cppcomponents::use<Callbacks::CompletedFunction>);
-		void Remove(cppcomponents::use<IEasy>);
+		cppcomponents::Future<void> Add(cppcomponents::use<IEasy>,cppcomponents::use<Callbacks::CompletedFunction>);
+		cppcomponents::Future<void>  Remove(cppcomponents::use<IEasy>);
 		void* GetNative();
 
 		CPPCOMPONENTS_CONSTRUCT(IMulti, Add, Remove,GetNative);

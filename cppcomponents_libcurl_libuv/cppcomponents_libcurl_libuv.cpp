@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <map>
 
+#include <thread>
+
 
 using namespace cppcomponents;
 using namespace cppcomponents_libcurl_libuv;
@@ -284,20 +286,42 @@ template<class Delegate>
 	 void SetFunctionOption(std::int32_t option, cppcomponents::use<cppcomponents::InterfaceUnknown> function){
 
 		 if (option == CURLOPT_WRITEFUNCTION){
-			 SetFunctionData(CURLOPT_WRITEDATA, CURLOPT_WRITEFUNCTION,WriteFunctionRaw);
-			 write_function_ = function.QueryInterface<Callbacks::WriteFunction>();
+			 SetFunctionData(CURLOPT_WRITEDATA, CURLOPT_WRITEFUNCTION, WriteFunctionRaw);
+			 if (function){
+				 write_function_ = function.QueryInterface<Callbacks::WriteFunction>();
+
+			 }
+			 else{
+				 write_function_ = nullptr;
+			 }
 		 }
 		 else if (option == CURLOPT_READFUNCTION){
-			 SetFunctionData(CURLOPT_READDATA, CURLOPT_READFUNCTION,ReadFunctionRaw);
-			 read_function_ = function.QueryInterface<Callbacks::ReadFunction>();
+			 SetFunctionData(CURLOPT_READDATA, CURLOPT_READFUNCTION, ReadFunctionRaw);
+			 if (function){
+				 read_function_ = function.QueryInterface<Callbacks::ReadFunction>();
+
+			 }
+			 else{
+				 read_function_ = nullptr;
+			 }
 		 }
 		 else if (option == CURLOPT_PROGRESSFUNCTION){
 			 SetFunctionData(CURLOPT_PROGRESSDATA, CURLOPT_PROGRESSFUNCTION,ProgressFunctionRaw);
-			 progress_function_ = function.QueryInterface<Callbacks::ProgressFunction>();
+			 if (function){
+				 progress_function_ = function.QueryInterface<Callbacks::ProgressFunction>();
+			 }
+			 else{
+				 progress_function_ = nullptr;
+			 }
 		 }
 		 else if (option == CURLOPT_HEADERFUNCTION){
 			 SetFunctionData(CURLOPT_HEADERDATA, CURLOPT_HEADERFUNCTION,HeaderFunctionRaw);
-			 header_function_ = function.QueryInterface<Callbacks::HeaderFunction>();
+			 if (function){
+				 header_function_ = function.QueryInterface<Callbacks::HeaderFunction>();
+			 }
+			 else{
+				 header_function_ = nullptr;
+			 }
 		 }
 		 else{
 			 throw error_invalid_arg();
@@ -431,10 +455,14 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 {
 	static const int pollid = 0;
 	static const int callbackid = 0;
+	static const int selfid = 0;
+	bool own_executor_;
+	use<uv::IUvExecutor> executor_;
+	std::thread thread_;
 
 	CURLM* multi_;
 
-	uv::Timer timeout_;
+	use<uv::ITimer> timeout_;
 
 	static use<IEasy> ieasy_from_easy(CURL* easy){
 		char* charpeasy = 0;
@@ -524,7 +552,7 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		
 			if (action == CURL_POLL_IN || action == CURL_POLL_OUT) {
 				if (!iunkpoll) {
-					poll = uv::Poll{ s, false };
+					poll = uv::Poll{ pthis->executor_.GetLoop(), s, false };
 					ieasy.StorePrivate(&pollid, poll);
 				}
 				else{
@@ -562,7 +590,8 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		}
 	}
 
-	ImpMulti() :multi_{ curl_multi_init() }{
+	void Setup(){
+		multi_ = curl_multi_init();
 		if (!multi_){
 			throw error_fail();
 		}
@@ -570,29 +599,78 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		curl_multi_setopt(multi_, CURLMOPT_SOCKETDATA, static_cast<void*>(this));
 		curl_multi_setopt(multi_, CURLMOPT_TIMERFUNCTION, start_timeout);
 		curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, static_cast<void*>(this));
+		timeout_ = uv::Timer{ executor_.GetLoop() };
+	}
+
+	ImpMulti(use<InterfaceUnknown> executor = nullptr) 
+		:own_executor_{!executor},
+		executor_{ own_executor_ ? uv::Executor{} : executor.QueryInterface<uv::IUvExecutor>() }
+	{
+		use<IMulti> self = QueryInterface<IMulti>();
+		executor_.Add([this,self]()mutable{
+			Setup();
+		});
+		if (own_executor_){
+			auto exec = executor_;
+			auto threadfunc = [this,exec]()mutable{
+				exec.Loop();
+				exec = nullptr;
+			};
+			thread_ = std::thread{ threadfunc };
+		}
+
+
+		return;
 
 	}
-	~ImpMulti(){
+	void ReleaseImplementationDestroy(){
+		auto multi = multi_;
+		timeout_ = nullptr;
+		auto exec = executor_;
+		executor_ = nullptr;
+		exec.Add([multi,exec]()mutable{
+			curl_multi_cleanup(multi);
+			multi = nullptr;
+			exec.MakeLoopExit();
+		});
+		if (own_executor_){
+
+			thread_.join();
+		}
 		int i = 0;
+		delete this;
+	}
+	~ImpMulti(){
 	}
 
 	void RemovePrivate(cppcomponents::use<IEasy>& easy){
 			easy.RemovePrivate(&callbackid);
 			easy.RemovePrivate(&pollid);
+			easy.RemovePrivate(&selfid);
 	}
 
-	void Add(cppcomponents::use<IEasy> easy, cppcomponents::use<Callbacks::CompletedFunction> func){
-		// Store the promise
-		try{
+	Future<void> Add(cppcomponents::use<IEasy> easy, cppcomponents::use<Callbacks::CompletedFunction> func){
+		auto promise = make_promise<void>();
+		use<IMulti> self = QueryInterface<IMulti>();
+		auto closure = [self,promise,this, easy, func]()mutable{
+			// Store the promise
+			try{
 
-			easy.StorePrivate(&callbackid, func);
-			auto res = curl_multi_add_handle(multi_, static_cast<CURL*>(easy.GetNative()));
-			curl_throw_if_error(res);
-		}
-		catch (...){
-			RemovePrivate(easy);
-			throw;
-		}
+				easy.StorePrivate(&callbackid, func);
+				easy.StorePrivate(&selfid, self);
+				auto res = curl_multi_add_handle(multi_, static_cast<CURL*>(easy.GetNative()));
+				curl_throw_if_error(res);
+			}
+			catch (...){
+				RemovePrivate(easy);
+
+				promise.SetError(error_fail::ec);
+			}
+		};
+
+		executor_.Add(closure);
+
+		return promise.QueryInterface<IFuture<void>>();
 
 	}
 	template<class I>
@@ -607,12 +685,19 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		auto res = curl_multi_remove_handle(multi_, static_cast<CURL*>(easy.GetNative()));
 		curl_throw_if_error(res);
 		auto func = GetPrivateSafe<Callbacks::CompletedFunction>(easy, &callbackid);
-
+		RemovePrivate(easy);
 		func(easy, code);
 
 	}
-	void Remove(cppcomponents::use<IEasy> easy){
-		RemoveAndCallCallback(easy, CURLE_OK);
+	Future<void> Remove(cppcomponents::use<IEasy> easy){
+		auto promise = make_promise<void>();
+		auto closure = [promise, this, easy]()mutable{
+
+			RemoveAndCallCallback(easy, CURLE_OK);
+		};
+		executor_.Add(closure);
+
+		return promise.QueryInterface<IFuture<void>>();
 	}
 	void* GetNative(){
 		return multi_;
