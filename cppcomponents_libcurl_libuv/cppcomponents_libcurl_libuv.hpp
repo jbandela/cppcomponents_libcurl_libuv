@@ -57,15 +57,22 @@ namespace cppcomponents_libcurl_libuv{
 		void SetFunctionOption(std::int32_t option, cppcomponents::use<cppcomponents::InterfaceUnknown> function);
 		void* GetNative();
 
-		void StorePrivate(void* key, cppcomponents::use<cppcomponents::InterfaceUnknown>);
-		cppcomponents::use<cppcomponents::InterfaceUnknown> GetPrivate(void* key);
-		bool RemovePrivate(void* key);
+		void StorePrivate(const void* key, cppcomponents::use<cppcomponents::InterfaceUnknown>);
+		cppcomponents::use<cppcomponents::InterfaceUnknown> GetPrivate(const void* key);
+		bool RemovePrivate(const void* key);
 
-		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption,StorePrivate,GetPrivate,RemovePrivate, GetNative);
+		std::int32_t GetInt32Info(std::int32_t info);
+		double GetDoubleInfo(std::int32_t info);
+		cppcomponents::cr_string GetStringInfo(std::int32_t info);
+		std::vector<std::string> GetListInfo(std::int32_t info);
+
+
+		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption,StorePrivate,GetPrivate,RemovePrivate, GetNative,
+			GetInt32Info,GetDoubleInfo,GetStringInfo,GetListInfo);
 
 	};
 	inline std::string easy_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }
-	typedef cppcomponents::runtime_class<slist_id, cppcomponents::object_interfaces<IEasy>> Easy_t;
+	typedef cppcomponents::runtime_class<easy_id, cppcomponents::object_interfaces<IEasy>> Easy_t;
 	typedef cppcomponents::use_runtime_class<Easy_t> Easy;
 
 	struct IResponse :cppcomponents::define_interface<cppcomponents::uuid<0xd919e330, 0x7ec6, 0x4e7a, 0xa6a7, 0xaedf0b98dc73>>
@@ -74,19 +81,7 @@ namespace cppcomponents_libcurl_libuv{
 		cppcomponents::cr_string Body();
 		std::vector<std::pair<std::string, std::string>> Headers();
 
-		std::int32_t GetInt32Info(std::int32_t info);
-		double GetDoubleInfo(std::int32_t info);
-		cppcomponents::cr_string GetStringOption(std::int32_t info);
-		std::vector<std::string> GetListOption(std::int32_t info);
-		
-
-
-	
-
-		
-
-
-		
+		CPPCOMPONENTS_CONSTRUCT(IResponse, Request, Body, Headers);
 	};
 
 
