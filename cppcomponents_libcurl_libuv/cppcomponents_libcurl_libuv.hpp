@@ -67,9 +67,10 @@ namespace cppcomponents_libcurl_libuv{
 		cppcomponents::cr_string GetStringInfo(std::int32_t info);
 		std::vector<std::string> GetListInfo(std::int32_t info);
 
+		cppcomponents::cr_string GetErrorDescription();
 
 		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption,StorePrivate,GetPrivate,RemovePrivate, GetNative,
-			GetInt32Info,GetDoubleInfo,GetStringInfo,GetListInfo);
+			GetInt32Info,GetDoubleInfo,GetStringInfo,GetListInfo,GetErrorDescription);
 
 	};
 	inline std::string easy_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }

@@ -176,6 +176,8 @@ template<class Delegate>
 
 	 use<IForm> form_;
 
+	 std::array<char, CURL_ERROR_SIZE + 1> error_buffer_;
+
 	 use<Callbacks::WriteFunction> write_function_;
 	 use<Callbacks::ReadFunction> read_function_;
 	 use<Callbacks::HeaderFunction> header_function_;
@@ -208,6 +210,8 @@ template<class Delegate>
 		 auto res = curl_easy_setopt(easy_, CURLOPT_PRIVATE, this->get_unknown_portable_base());
 		 curl_throw_if_error(res);
 		 
+		 std::fill(error_buffer_.begin(), error_buffer_.end(), 0);
+		 curl_easy_setopt(easy_, CURLOPT_ERRORBUFFER, error_buffer_.data());
 	 }
 
 	 ~ImpEasy(){
@@ -252,6 +256,7 @@ template<class Delegate>
 		 auto& imp = *static_cast<ImpEasy*>(userdata);
 		 if (imp.read_function_)
 			 return imp.read_function_(ptr, size, nmemb);
+		 return 0;
 	 }
 	 static std::size_t HeaderFunctionRaw(void* ptr, std::size_t size, std::size_t nmemb, void* userdata){
 		 auto& imp = *static_cast<ImpEasy*>(userdata);
@@ -358,6 +363,9 @@ template<class Delegate>
 		 }
 	 }
 
+	 cppcomponents::cr_string GetErrorDescription(){
+		 return cr_string{ error_buffer_.data() };
+	 }
 
 
 };
@@ -454,21 +462,20 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		curl_multi_socket_action(pthis->multi_, sockfd, flags,
 			&running_handles);
 
-		while ((message = curl_multi_info_read(pthis->multi_,  &pending))) {
+		while ((message = curl_multi_info_read(pthis->multi_, &pending))) {
 
 
 			switch (message->msg) {
 			case CURLMSG_DONE:
-				curl_easy_getinfo(message->easy_handle, CURLINFO_EFFECTIVE_URL,
-					&done_url);
-				printf("%s DONE\n", done_url);
-				{
-					auto easy = message->easy_handle;
-					auto ieasy = ieasy_from_easy(easy);
-				
-					pthis->RemoveAndCallCallback(ieasy,message->data.result);
+			{
+								 curl_easy_getinfo(message->easy_handle, CURLINFO_EFFECTIVE_URL,
+									 &done_url);
+								 auto easy = message->easy_handle;
+								 auto ieasy = ieasy_from_easy(easy);
 
-				}
+								 pthis->RemoveAndCallCallback(ieasy, message->data.result);
+
+			}
 
 				break;
 			default:

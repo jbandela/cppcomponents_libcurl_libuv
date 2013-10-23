@@ -18,11 +18,15 @@ int async_main(cppcomponents::awaiter await){
 		return s.size();
 	};
 
-	auto done_func = [promise](cppcomponents::use<IEasy>, std::int32_t ec)mutable{
+	auto done_func = [promise](cppcomponents::use<IEasy> easy, std::int32_t ec)mutable{
+		if (ec != Constants::Errors::CURLE_OK){
+			std::cout << "Error: " << easy.GetErrorDescription() << "\n";
+		}
 		promise.Set();
 	};
 	easy.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, cppcomponents::make_delegate<Callbacks::WriteFunction>(writer_func));
-	easy.SetPointerOption(Constants::Options::CURLOPT_URL, "http://www.google.com/");
+	easy.SetPointerOption(Constants::Options::CURLOPT_URL, "https://www.google.com/");
+	easy.SetPointerOption(Constants::Options::CURLOPT_CAINFO, "cacert.pem");
 	Curl::DefaultMulti().Add(easy, cppcomponents::make_delegate<Callbacks::CompletedFunction>(done_func));
 
 
