@@ -61,7 +61,6 @@ int async_main(cppcomponents::awaiter await){
 }
 
 int main(){
-	//cppcomponents::use<IMulti> multi = cppcomponents_libcurl_libuv::Curl::DefaultMulti();
 	auto am = cppcomponents::resumable(async_main);
 	am();
 	exec.Loop();
