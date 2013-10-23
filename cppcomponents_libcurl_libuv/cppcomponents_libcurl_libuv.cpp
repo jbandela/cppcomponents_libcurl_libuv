@@ -1,5 +1,4 @@
 #include "cppcomponents_libcurl_libuv.hpp"
-#include "implementation/constants.hpp"
 #include <curl/curl.h>
 
 #include <cppcomponents_libuv/cppcomponents_libuv.hpp>
@@ -246,47 +245,52 @@ template<class Delegate>
 
 		 auto& imp = *static_cast<ImpEasy*>(userdata);
 		 if (imp.write_function_)
-			 imp.write_function_(ptr, size, nmemb);
+			 return imp.write_function_(ptr, size, nmemb);
+		 return 0;
 	 }
 	 static std::size_t ReadFunctionRaw(void* ptr, std::size_t size, std::size_t nmemb, void* userdata){
 		 auto& imp = *static_cast<ImpEasy*>(userdata);
 		 if (imp.read_function_)
-			 imp.read_function_(ptr, size, nmemb);
+			 return imp.read_function_(ptr, size, nmemb);
 	 }
 	 static std::size_t HeaderFunctionRaw(void* ptr, std::size_t size, std::size_t nmemb, void* userdata){
 		 auto& imp = *static_cast<ImpEasy*>(userdata);
 		 if (imp.header_function_)
-			 imp.header_function_(ptr, size, nmemb);
+			 return imp.header_function_(ptr, size, nmemb);
+		 return 0;
 	 }
 
-	 int ProgressFunctionRaw(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow){
+	 static int ProgressFunctionRaw(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow){
 		 auto& imp = *static_cast<ImpEasy*>(clientp);
 		 if (imp.progress_function_)
-			 imp.progress_function_(dltotal, dlnow, ultotal, ulnow);
+			 return imp.progress_function_(dltotal, dlnow, ultotal, ulnow);
+		 return 0;
 
 	 }
 
-	 void SetFunctionData(CURLoption option){
+	 template<class T>
+	 void SetFunctionData(CURLoption data, CURLoption function, T f){
 		 void* pthis = this;
-		 curl_easy_setopt(easy_,option, pthis);
+		 curl_easy_setopt(easy_,data, pthis);
+		 curl_easy_setopt(easy_, function, f);
 	 }
 
 	 void SetFunctionOption(std::int32_t option, cppcomponents::use<cppcomponents::InterfaceUnknown> function){
 
 		 if (option == CURLOPT_WRITEFUNCTION){
-			 SetFunctionData(CURLOPT_WRITEDATA);
+			 SetFunctionData(CURLOPT_WRITEDATA, CURLOPT_WRITEFUNCTION,WriteFunctionRaw);
 			 write_function_ = function.QueryInterface<Callbacks::WriteFunction>();
 		 }
 		 else if (option == CURLOPT_READFUNCTION){
-			 SetFunctionData(CURLOPT_READDATA);
+			 SetFunctionData(CURLOPT_READDATA, CURLOPT_READFUNCTION,ReadFunctionRaw);
 			 read_function_ = function.QueryInterface<Callbacks::ReadFunction>();
 		 }
 		 else if (option == CURLOPT_PROGRESSFUNCTION){
-			 SetFunctionData(CURLOPT_PROGRESSDATA);
+			 SetFunctionData(CURLOPT_PROGRESSDATA, CURLOPT_PROGRESSFUNCTION,ProgressFunctionRaw);
 			 progress_function_ = function.QueryInterface<Callbacks::ProgressFunction>();
 		 }
 		 else if (option == CURLOPT_HEADERFUNCTION){
-			 SetFunctionData(CURLOPT_HEADERDATA);
+			 SetFunctionData(CURLOPT_HEADERDATA, CURLOPT_HEADERFUNCTION,HeaderFunctionRaw);
 			 header_function_ = function.QueryInterface<Callbacks::HeaderFunction>();
 		 }
 		 else{
@@ -515,6 +519,10 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 					poll = uv::Poll{ s, false };
 					ieasy.StorePrivate(&pollid, poll);
 				}
+				else{
+					poll = iunkpoll.QueryInterface<uv::IPoll>();
+
+				}
 			}
 
 			switch (action) {
@@ -555,6 +563,9 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		curl_multi_setopt(multi_, CURLMOPT_TIMERFUNCTION, start_timeout);
 		curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, static_cast<void*>(this));
 
+	}
+	~ImpMulti(){
+		int i = 0;
 	}
 
 	void RemovePrivate(cppcomponents::use<IEasy>& easy){
@@ -605,6 +616,54 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 	void* IImp_GetImp(){
 		return this;
 	}
+};
+
+
+struct curl_freer{
+	void* p_;
+	curl_freer(void* p) :p_(p){}
+	~curl_freer(){
+		if (p_){
+			curl_free(p_);
+		}
+	}
+};
+
+struct ImpCurlStatics : implement_runtime_class<ImpCurlStatics, Curl_t>
+{
+	ImpCurlStatics(){}
+	static std::string Escape(cppcomponents::cr_string url){
+		auto c = curl_escape(url.data(), url.size());
+		curl_freer f{ c };
+		if (!c){
+			throw error_fail();
+		}
+		std::string ret{ c };
+		return ret;
+	}
+	static std::string UnEscape(cppcomponents::cr_string url){
+		auto c = curl_unescape(url.data(), url.size());
+		curl_freer f{ c };
+		if (!c){
+			throw error_fail();
+		}
+		std::string ret{ c };
+		return ret;
+	}
+	static cppcomponents::cr_string Version(){
+		return cr_string{ curl_version() };
+	}
+	static std::chrono::system_clock::time_point GetDate(cppcomponents::cr_string date){
+		auto t = curl_getdate(date.data(),nullptr);
+		return std::chrono::system_clock::from_time_t(t);
+	}
+	static cppcomponents::use<IMulti> DefaultMulti(){
+		struct uniq{};
+		return cross_compiler_interface::detail::safe_static_init<Multi, uniq>::get();
+
+	}
+
+
 };
 
 

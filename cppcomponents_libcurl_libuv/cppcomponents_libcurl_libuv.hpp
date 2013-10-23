@@ -8,6 +8,7 @@
 #include <cppcomponents/channel.hpp>
 #include <chrono>
 
+#include "implementation/constants.hpp"
 namespace cppcomponents_libcurl_libuv{
 
 
