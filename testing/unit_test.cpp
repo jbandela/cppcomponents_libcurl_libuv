@@ -27,6 +27,7 @@ int async_main(cppcomponents::awaiter await){
 	easy.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, cppcomponents::make_delegate<Callbacks::WriteFunction>(writer_func));
 	easy.SetPointerOption(Constants::Options::CURLOPT_URL, "https://www.google.com/");
 	easy.SetPointerOption(Constants::Options::CURLOPT_CAINFO, "cacert.pem");
+	easy.SetInt32Option(Constants::Options::CURLOPT_SSL_VERIFYHOST, 2);
 	Curl::DefaultMulti().Add(easy, cppcomponents::make_delegate<Callbacks::CompletedFunction>(done_func));
 
 

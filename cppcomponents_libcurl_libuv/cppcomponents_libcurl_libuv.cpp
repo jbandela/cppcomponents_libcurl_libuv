@@ -229,7 +229,8 @@ template<class Delegate>
 			 option == CURLOPT_READDATA ||
 			 option == CURLOPT_PROGRESSDATA ||
 			 option == CURLOPT_HEADERDATA ||
-			 option == CURLOPT_PRIVATE
+			 option == CURLOPT_PRIVATE ||
+			 option == CURLOPT_ERRORBUFFER
 			 )
 		 {
 
