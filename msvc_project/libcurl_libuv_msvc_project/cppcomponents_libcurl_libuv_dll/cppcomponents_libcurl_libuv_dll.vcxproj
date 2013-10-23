@@ -47,6 +47,7 @@
     <Linkage-openssl>static</Linkage-openssl>
     <Linkage-libssh2>static</Linkage-libssh2>
     <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    <LibraryPath>$(SolutionDir)packages\curl.7.30.0.2\build\native\lib\v110\Win32\Debug\static;$(SolutionDir)packages\openssl.1.0.1.24\build\native\lib\v110\Win32\Debug\static;$(SolutionDir)packages\zlib.1.2.8.6\build\native\lib\v110\Win32\Debug\static\cdecl;$(SolutionDir)packages\libssh2.1.4.3.3\build\native\lib\v110\Win32\Debug\static\cdecl;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -57,12 +58,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CPPCOMPONENTS_LIBCURL_LIBUV_DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;CURL_STATICLIB;_DEBUG;_WINDOWS;_USRDLL;CPPCOMPONENTS_LIBCURL_LIBUV_DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.lib;libeay32.lib;ssleay32.lib;Ws2_32.lib;libssh2.lib;zlib.lib;wldap32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -73,7 +75,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CPPCOMPONENTS_LIBCURL_LIBUV_DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;CURL_STATICLIB;NDEBUG;_WINDOWS;_USRDLL;CPPCOMPONENTS_LIBCURL_LIBUV_DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

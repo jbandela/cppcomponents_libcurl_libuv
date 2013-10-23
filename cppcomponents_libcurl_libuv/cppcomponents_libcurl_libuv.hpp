@@ -61,7 +61,7 @@ namespace cppcomponents_libcurl_libuv{
 		cppcomponents::use<cppcomponents::InterfaceUnknown> GetPrivate(void* key);
 		bool RemovePrivate(void* key);
 
-		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption, GetNative);
+		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption,StorePrivate,GetPrivate,RemovePrivate, GetNative);
 
 	};
 	inline std::string easy_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }

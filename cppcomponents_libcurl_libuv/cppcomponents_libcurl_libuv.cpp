@@ -242,7 +242,9 @@ struct ImpEasy :implement_runtime_class<ImpEasy, Easy_t>
 		}
 
 	}
-	void* GetNative();
+	void* GetNative(){
+		return easy_;
+	}
 
 	void StorePrivate(void* key, cppcomponents::use<InterfaceUnknown> v){
 		extra_info_[key] = v;
