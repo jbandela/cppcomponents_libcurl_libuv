@@ -159,23 +159,43 @@ template<class Delegate>
 		static_cast<portable_base*>(userdata)), true };
 	return iunk.QueryInterface<Delegate>();
 }
+ struct IImp :define_interface<cppcomponents::uuid<0xd9185c90, 0xd32e, 0x4909, 0xafaa, 0xc9a50557ae28>>
+ {
+	 void* GetImp();
 
- struct ImpEasy :implement_runtime_class<ImpEasy, Easy_t>
+	 CPPCOMPONENTS_CONSTRUCT(IImp, GetImp);
+ };
+
+ inline std::string easyimp_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }
+ typedef cppcomponents::runtime_class<easyimp_id, cppcomponents::object_interfaces<IEasy,IImp>> EasyWithImp_t;
+ typedef cppcomponents::use_runtime_class<EasyWithImp_t> EasyWithImp;;
+
+ struct ImpEasy :implement_runtime_class<ImpEasy, EasyWithImp_t>
  {
 	 CURL* easy_;
 
-	 std::array < char, CURL_ERROR_SIZE + 1> error_buffer_;
 
 	 use<IForm> form_;
 
 	 use<Callbacks::WriteFunction> write_function_;
 	 use<Callbacks::ReadFunction> read_function_;
-	 use<Callbacks::HeaderFunction> header_function;
+	 use<Callbacks::HeaderFunction> header_function_;
 	 use<Callbacks::ProgressFunction> progress_function_;
 
 	 std::map < const void*, use<InterfaceUnknown> > extra_info_;
 
+	static ImpEasy* impeasy_from_easy(CURL* easy){
+		 char* charpeasy = 0;
+		 curl_easy_getinfo(easy, CURLINFO_PRIVATE, &charpeasy);
+		 void* vpeasy = charpeasy;
+		 auto iunk = use<InterfaceUnknown>{reinterpret_portable_base<InterfaceUnknown>(static_cast<portable_base*>(vpeasy)), true};
+		 return static_cast<ImpEasy*>(iunk.QueryInterface<IImp>().GetImp());
+	 }
 
+
+	void* IImp_GetImp(){
+		return this;
+	}
 
 	 ImpEasy()
 		 :
@@ -188,7 +208,7 @@ template<class Delegate>
 		 // Set the private of easy to interface
 		 auto res = curl_easy_setopt(easy_, CURLOPT_PRIVATE, this->get_unknown_portable_base());
 		 curl_throw_if_error(res);
-		 std::fill(error_buffer_.begin(), error_buffer_.end(), 0);
+		 
 	 }
 
 	 ~ImpEasy(){
@@ -223,29 +243,55 @@ template<class Delegate>
 	 }
 
 	 static std::size_t WriteFunctionRaw(char* ptr, std::size_t size, std::size_t nmemb, void* userdata){
-		 // user data is the delegate pointer
-		 use<InterfaceUnknown> iunk{ cppcomponents::reinterpret_portable_base<InterfaceUnknown>(
-			 static_cast<portable_base*>(userdata)), true };
-		 auto func = iunk.QueryInterface<Callbacks::WriteFunction>();
-		 return func(ptr, size, nmemb);
+
+		 auto& imp = *static_cast<ImpEasy*>(userdata);
+		 if (imp.write_function_)
+			 imp.write_function_(ptr, size, nmemb);
 	 }
 	 static std::size_t ReadFunctionRaw(void* ptr, std::size_t size, std::size_t nmemb, void* userdata){
-		 // user data is the
+		 auto& imp = *static_cast<ImpEasy*>(userdata);
+		 if (imp.read_function_)
+			 imp.read_function_(ptr, size, nmemb);
 	 }
 	 static std::size_t HeaderFunctionRaw(void* ptr, std::size_t size, std::size_t nmemb, void* userdata){
-		 // user data is the
+		 auto& imp = *static_cast<ImpEasy*>(userdata);
+		 if (imp.header_function_)
+			 imp.header_function_(ptr, size, nmemb);
 	 }
 
 	 int ProgressFunctionRaw(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow){
+		 auto& imp = *static_cast<ImpEasy*>(clientp);
+		 if (imp.progress_function_)
+			 imp.progress_function_(dltotal, dlnow, ultotal, ulnow);
 
+	 }
+
+	 void SetFunctionData(CURLoption option){
+		 void* pthis = this;
+		 curl_easy_setopt(easy_,option, pthis);
 	 }
 
 	 void SetFunctionOption(std::int32_t option, cppcomponents::use<cppcomponents::InterfaceUnknown> function){
 
 		 if (option == CURLOPT_WRITEFUNCTION){
-
+			 SetFunctionData(CURLOPT_WRITEDATA);
+			 write_function_ = function.QueryInterface<Callbacks::WriteFunction>();
 		 }
-
+		 else if (option == CURLOPT_READFUNCTION){
+			 SetFunctionData(CURLOPT_READDATA);
+			 read_function_ = function.QueryInterface<Callbacks::ReadFunction>();
+		 }
+		 else if (option == CURLOPT_PROGRESSFUNCTION){
+			 SetFunctionData(CURLOPT_PROGRESSDATA);
+			 progress_function_ = function.QueryInterface<Callbacks::ProgressFunction>();
+		 }
+		 else if (option == CURLOPT_HEADERFUNCTION){
+			 SetFunctionData(CURLOPT_HEADERDATA);
+			 header_function_ = function.QueryInterface<Callbacks::HeaderFunction>();
+		 }
+		 else{
+			 throw error_invalid_arg();
+		 }
 	 }
 	 void* GetNative(){
 		 return easy_;
@@ -312,12 +358,7 @@ template<class Delegate>
 
 };
 
-struct IImp :define_interface<cppcomponents::uuid<0xd9185c90, 0xd32e, 0x4909, 0xafaa, 0xc9a50557ae28>>
-{
-	void* GetImp();
 
-	CPPCOMPONENTS_CONSTRUCT(IImp, GetImp);
-};
 
 inline std::string multi_id(){ return "cppcomponents_libcurl_libuv_dll!Multi"; }
 typedef cppcomponents::runtime_class<multi_id, cppcomponents::object_interfaces<IMulti, IImp>> Multi_t;
