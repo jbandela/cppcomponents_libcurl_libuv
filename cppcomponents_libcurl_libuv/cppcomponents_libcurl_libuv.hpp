@@ -84,9 +84,12 @@ namespace cppcomponents_libcurl_libuv{
 		CPPCOMPONENTS_CONSTRUCT(IResponse, Request, Body, Headers);
 	};
 
+	namespace Callbacks{
+		typedef cppcomponents::delegate<void(cppcomponents::use<IEasy>, std::int32_t ec)> CompletedFunction;
+	}
 
 	struct IMulti :cppcomponents::define_interface<cppcomponents::uuid<0xc05815c2, 0xef99, 0x40cb, 0xafe5, 0x35cafdefe834>>{
-		cppcomponents::Future<cppcomponents::use<IResponse>> Add(cppcomponents::use<IEasy>);
+		void Add(cppcomponents::use<IEasy>,cppcomponents::use<Callbacks::CompletedFunction>);
 		void Remove(cppcomponents::use<IEasy>);
 		void* GetNative();
 

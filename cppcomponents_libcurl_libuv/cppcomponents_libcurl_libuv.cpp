@@ -417,8 +417,7 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 {
 	static const int pollid = 0;
-	static const int responseid = 0;
-	static const int promiseid = 0;
+	static const int callbackid = 0;
 
 	CURLM* multi_;
 
@@ -463,7 +462,7 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 					auto easy = message->easy_handle;
 					auto ieasy = ieasy_from_easy(easy);
 				
-					pthis->RemoveAndCallFuture(ieasy,message->data.result);
+					pthis->RemoveAndCallCallback(ieasy,message->data.result);
 
 				}
 
@@ -559,27 +558,17 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 	}
 
 	void RemovePrivate(cppcomponents::use<IEasy>& easy){
-			easy.RemovePrivate(&promiseid);
+			easy.RemovePrivate(&callbackid);
 			easy.RemovePrivate(&pollid);
-			easy.RemovePrivate(&responseid);
 	}
 
-	cppcomponents::Future<cppcomponents::use<IResponse>> Add(cppcomponents::use<IEasy> easy){
+	void Add(cppcomponents::use<IEasy> easy, cppcomponents::use<Callbacks::CompletedFunction> func){
 		// Store the promise
 		try{
 
-			auto promise = make_promise<use<IResponse>>();
-			easy.StorePrivate(&promiseid, promise);
-
-			//use<uv::IPoll> poll = uv::Poll{};
-			//easy.StorePrivate(&pollid, poll);
-
-			auto response = ImpResponse::create(easy);
-			easy.StorePrivate(&responseid, response);
-
+			easy.StorePrivate(&callbackid, func);
 			auto res = curl_multi_add_handle(multi_, static_cast<CURL*>(easy.GetNative()));
 			curl_throw_if_error(res);
-			return promise.QueryInterface < IFuture<use<IResponse>> >();
 		}
 		catch (...){
 			RemovePrivate(easy);
@@ -595,23 +584,16 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 		}
 		return iunk.QueryInterface<I>();
 	}
-	void RemoveAndCallFuture(use<IEasy> easy, CURLcode code){
+	void RemoveAndCallCallback(use<IEasy> easy, CURLcode code){
 		auto res = curl_multi_remove_handle(multi_, static_cast<CURL*>(easy.GetNative()));
 		curl_throw_if_error(res);
-		auto response = GetPrivateSafe<IResponse>(easy, &responseid);
-		auto promise = GetPrivateSafe < IPromise<use<IResponse>>>(easy,&promiseid);
-		RemovePrivate(easy);
+		auto func = GetPrivateSafe<Callbacks::CompletedFunction>(easy, &callbackid);
 
-		if (code != CURLE_OK){
-			promise.SetError(-code);
-		}
-		else{
-			promise.Set(response);
-		}
+		func(easy, code);
 
 	}
 	void Remove(cppcomponents::use<IEasy> easy){
-		RemoveAndCallFuture(easy, CURLE_OK);
+		RemoveAndCallCallback(easy, CURLE_OK);
 	}
 	void* GetNative(){
 		return multi_;
