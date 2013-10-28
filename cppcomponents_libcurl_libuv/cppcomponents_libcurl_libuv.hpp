@@ -86,6 +86,27 @@ namespace cppcomponents_libcurl_libuv{
 		CPPCOMPONENTS_CONSTRUCT(IResponse, Request, Body, Headers);
 	};
 
+	struct IResponseWriter :cppcomponents::define_interface<cppcomponents::uuid<0x826baf64, 0x1e2e, 0x401e, 0xbccc, 0x14227dda0fbe>>
+	{
+		void AddToBody(const char* first, const char* last);
+
+		void AddToHeader(const char* first, const char* last);
+
+		CPPCOMPONENTS_CONSTRUCT(IResponseWriter, AddToBody, AddToHeader);
+
+	};
+
+	struct IResponseFactory :cppcomponents::define_interface<cppcomponents::uuid<0x71163bc4, 0x95ba, 0x49f8, 0x9263, 0x28d366ab7467>>
+	{
+		cppcomponents::use<cppcomponents::InterfaceUnknown> Create(cppcomponents::use<IEasy>);
+
+		CPPCOMPONENTS_CONSTRUCT(IResponseFactory, Create);
+	};
+	inline std::string response_id(){ return "cppcomponents_libcurl_libuv_dll!Response"; }
+	typedef cppcomponents::runtime_class<response_id, cppcomponents::object_interfaces<IResponse,IResponseWriter>
+	,cppcomponents::factory_interface<IResponseFactory>> Response_t;
+	typedef cppcomponents::use_runtime_class<Response_t> Response;
+
 	namespace Callbacks{
 		typedef cppcomponents::delegate<void(cppcomponents::use<IEasy>, std::int32_t ec)> CompletedFunction;
 	}
@@ -121,7 +142,7 @@ namespace cppcomponents_libcurl_libuv{
 		std::string Url;
 		std::string Method;
 		std::vector<std::pair<std::string, std::string>> Headers;
-		cppcomponents::cr_string Body;
+		std::string Body;
 		std::string Username;
 		std::string Password;
 		std::string AuthMode;
@@ -152,6 +173,8 @@ namespace cppcomponents_libcurl_libuv{
 
 	};
 
+	
+
 
 	namespace Callbacks{
 
@@ -168,7 +191,6 @@ namespace cppcomponents_libcurl_libuv{
 
 
 	}
-
 
 
 

@@ -21,6 +21,9 @@
     <ClInclude Include="..\..\..\cppcomponents_libcurl_libuv\implementation\constants.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\cppcomponents_libcurl_libuv\http_client.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\cppcomponents_libcurl_libuv\cppcomponents_libcurl_libuv.cpp">

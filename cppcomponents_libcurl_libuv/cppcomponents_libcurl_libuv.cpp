@@ -402,9 +402,9 @@ typedef cppcomponents::runtime_class<multi_id, cppcomponents::object_interfaces<
 typedef cppcomponents::use_runtime_class<Multi_t> Multi;
 
 
-inline std::string response_id(){ return "cppcomponents_libcurl_libuv_dll!Response"; }
-typedef cppcomponents::runtime_class<response_id, cppcomponents::object_interfaces<IResponse, IImp>,factory_interface<NoConstructorFactoryInterface>> Response_t;
-typedef cppcomponents::use_runtime_class<Response_t> Response;
+//inline std::string response_id(){ return "cppcomponents_libcurl_libuv_dll!Response"; }
+//typedef cppcomponents::runtime_class<response_id, cppcomponents::object_interfaces<IResponse, IImp>,factory_interface<NoConstructorFactoryInterface>> Response_t;
+//typedef cppcomponents::use_runtime_class<Response_t> Response;
 
 
 struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
@@ -415,11 +415,11 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 
 	ImpResponse(use<IEasy> e) :easy_{ e }{}
 
-	void AddToBody(const char* first, const char* last){
+	void IResponseWriter_AddToBody(const char* first, const char* last){
 		body_.insert(body_.end(), first, last);
 	}
 
-	void AddToHeader(const char* first, const char* last){
+	void IResponseWriter_AddToHeader(const char* first, const char* last){
 		auto colon = std::find(first, last, ':');
 		std::string name{ first, colon };
 		if (colon != last){
@@ -660,6 +660,7 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 				easy.StorePrivate(&selfid, self);
 				auto res = curl_multi_add_handle(multi_, static_cast<CURL*>(easy.GetNative()));
 				curl_throw_if_error(res);
+				promise.Set();
 			}
 			catch (...){
 				RemovePrivate(easy);
@@ -757,6 +758,19 @@ struct ImpCurlStatics : implement_runtime_class<ImpCurlStatics, Curl_t>
 	}
 
 
+};
+
+
+struct CurlInit{
+	uv::Loop loop;
+	CurlInit(){
+		curl_global_init(CURL_GLOBAL_ALL);
+		uv::Uv::Version();
+	}
+
+	~CurlInit(){
+		curl_global_cleanup();
+	}
 };
 
 
