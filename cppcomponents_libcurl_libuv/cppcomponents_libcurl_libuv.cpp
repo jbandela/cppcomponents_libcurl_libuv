@@ -762,10 +762,8 @@ struct ImpCurlStatics : implement_runtime_class<ImpCurlStatics, Curl_t>
 
 
 struct CurlInit{
-	uv::Loop loop;
 	CurlInit(){
 		curl_global_init(CURL_GLOBAL_ALL);
-		uv::Uv::Version();
 	}
 
 	~CurlInit(){

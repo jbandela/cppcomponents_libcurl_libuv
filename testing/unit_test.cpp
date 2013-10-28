@@ -48,14 +48,17 @@ int async_main(cppcomponents::awaiter await){
 
 
 	exec.MakeLoopExit();
+	std::cerr << "Completed successfully\n";
 	return 0;
 
 }
 
 int main(){
+	new char[50];
 	auto am = cppcomponents::resumable(async_main);
 	am();
 	exec.Loop();
+	std::cerr << "Completed successfully\n";
 	return 0;
 }
 
