@@ -6,6 +6,45 @@
 #include "cppcomponents_libcurl_libuv.hpp"
 
 namespace cppcomponents_libcurl_libuv{
+
+
+	struct Request{
+
+		std::string Url;
+		std::string Method;
+		std::vector<std::pair<std::string, std::string>> Headers;
+		std::string Body;
+		std::string Username;
+		std::string Password;
+		std::string AuthMode;
+		float ConnectTimeout;
+		float RequestTimeout;
+
+		bool FollowRedirects;
+		int MaxRedirects;
+		std::string UserAgent;
+		bool UseGzip;
+		std::string NetworkInterface;
+		std::string ProxyHost;
+		int ProxyPort;
+		std::string ProxyUsername;
+		std::string ProxyPassword;
+		bool AllowNowStandardMethods;
+		bool ValidateCert;
+		std::string CACerts;
+		bool AllowIPv6;
+		std::string ClientKey;
+		std::string ClientCert;
+
+
+		cppcomponents::Channel<cppcomponents::use<cppcomponents::IBuffer>> StreamingChannel;
+		cppcomponents::Channel<cppcomponents::use<cppcomponents::IBuffer>> HeaderChannel;
+		cppcomponents::Channel<std::tuple<double, double, double, double>> ProgressChannel;
+
+		Request(){}
+		Request(const std::string& url) :Url{ url }{}
+		Request(const char* url) :Url{ url }{}
+	};
 	struct HttpClient{
 	private:
 
@@ -76,7 +115,10 @@ namespace cppcomponents_libcurl_libuv{
 				throw cppcomponents::error_invalid_arg();
 			}
 		}
+		void HandleCertificates(const Request& req){
+			easy_.SetPointerOption(Constants::Options::CURLOPT_CAINFO, const_cast<char*>(req.CACerts.c_str()));
 
+		}
 		static void CleanupCallbacks(cppcomponents::use<IEasy> easy){
 			easy.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, nullptr);
 			easy.SetFunctionOption(Constants::Options::CURLOPT_READFUNCTION, nullptr);
@@ -99,12 +141,21 @@ namespace cppcomponents_libcurl_libuv{
 			auto easy = easy_;
 			cppcomponents::use<IResponse> response = response_;
 			auto completed = [easy, promise, response](cppcomponents::use<IEasy>, std::int32_t ec)mutable{
-				CleanupCallbacks(easy);
-				if (ec != Constants::Errors::CURLE_OK){
-					promise.SetError(-ec);
-				}
-				else{
+				try{
+					CleanupCallbacks(easy);
+					if (ec != Constants::Errors::CURLE_OK){
+						auto rw = response.QueryInterface<IResponseWriter>();
+						rw.SetError(ec);
+						
+					}
 					promise.Set(response);
+				}
+				catch (std::exception& e)
+				{
+					//try{
+						promise.SetError(cppcomponents::error_mapper::error_code_from_exception(e));
+					//}
+					//catch (...){}
 				}
 			};
 			multi_.Add(easy_, cppcomponents::make_delegate<Callbacks::CompletedFunction>(completed))
@@ -120,12 +171,40 @@ namespace cppcomponents_libcurl_libuv{
 		}
 
 		cppcomponents::Future<cppcomponents::use<IResponse>> Fetch(const Request& req){
+			easy_.Reset();
 			if (!req.Url.size()){ throw cppcomponents::error_invalid_arg(); }
 			easy_.SetPointerOption(Constants::Options::CURLOPT_URL, const_cast<char*>(req.Url.c_str()));
+			cppcomponents::use<Callbacks::WriteFunction> writer_func;
+			if (req.StreamingChannel){
+				auto chan = req.StreamingChannel;
+				 auto func = [chan](char* p, std::size_t n, std::size_t nmemb) mutable -> std::size_t{
+					auto sz = n*nmemb;
+					auto buffer = cppcomponents::Buffer::Create(sz);
+					buffer.SetSize(sz);
+					std::copy(p, p + sz, buffer.Begin());
+					chan.Write(buffer);
+					return sz;
+				};
 
+				 writer_func = cppcomponents::make_delegate<Callbacks::WriteFunction>(func);
 
+			}
+			else{
+				auto response_writer = response_.as<IResponseWriter>();
+				 auto func = [response_writer](char* p, std::size_t n, std::size_t nmemb) mutable -> std::size_t{
+					auto sz = n*nmemb;
+					response_writer.AddToBody(p, p + sz);
+					return sz;
+				};
+				 writer_func = cppcomponents::make_delegate<Callbacks::WriteFunction>(func);
+			}
+
+			easy_.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, writer_func);
+			HandleCertificates(req);
 			return Fetch();
 		}
+
+
 
 	};
 

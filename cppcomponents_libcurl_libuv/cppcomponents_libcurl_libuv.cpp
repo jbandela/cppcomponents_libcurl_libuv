@@ -200,6 +200,16 @@ template<class Delegate>
 		return this;
 	}
 
+	void Init(){
+
+		 // Set the private of easy to interface
+		 auto res = curl_easy_setopt(easy_, CURLOPT_PRIVATE, this->get_unknown_portable_base());
+		 curl_throw_if_error(res);
+		 
+		 std::fill(error_buffer_.begin(), error_buffer_.end(), 0);
+		 curl_easy_setopt(easy_, CURLOPT_ERRORBUFFER, error_buffer_.data());
+	}
+
 	 ImpEasy()
 		 :
 		 easy_{ curl_easy_init() }
@@ -208,12 +218,6 @@ template<class Delegate>
 			 throw error_fail();
 		 }
 
-		 // Set the private of easy to interface
-		 auto res = curl_easy_setopt(easy_, CURLOPT_PRIVATE, this->get_unknown_portable_base());
-		 curl_throw_if_error(res);
-		 
-		 std::fill(error_buffer_.begin(), error_buffer_.end(), 0);
-		 curl_easy_setopt(easy_, CURLOPT_ERRORBUFFER, error_buffer_.data());
 	 }
 
 	 ~ImpEasy(){
@@ -393,6 +397,12 @@ template<class Delegate>
 	 }
 
 
+	 void Reset(){
+		 curl_easy_reset(easy_);
+		 Init();
+	 }
+
+
 };
 
 
@@ -412,8 +422,9 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 	use<IEasy> easy_;
 	std::vector<char> body_;
 	std::vector<std::pair<std::string, std::string>> headers_;
+	cppcomponents::error_code ec_;
 
-	ImpResponse(use<IEasy> e) :easy_{ e }{}
+	ImpResponse(use<IEasy> e) :easy_{ e }, ec_{ 0 }{}
 
 	void IResponseWriter_AddToBody(const char* first, const char* last){
 		body_.insert(body_.end(), first, last);
@@ -428,15 +439,33 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 		std::string value{ colon, last };
 		headers_.push_back(std::make_pair(name, value));
 	}
+	
+	void IResponseWriter_SetError(cppcomponents::error_code ec){
+		if (ec < 0){
+			ec_ = ec;
+		}
+		else{
+			ec_ = -ec;
+		}
+	}
 
 	void* IImp_GetImp(){
 		return this;
+	}
+
+	cppcomponents::error_code ErrorCode(){
+		return ec_;
+	}
+
+	cppcomponents::cr_string ErrorMessage(){
+		return easy_.GetErrorDescription();
 	}
 
 	cppcomponents::use<IEasy> Request(){
 		return easy_;
 	}
 	cppcomponents::cr_string Body(){
+		throw_if_error(ec_);
 		if (!body_.size()){
 			return cr_string{};
 		}
@@ -444,6 +473,7 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 	}
 
 	std::vector<std::pair<std::string, std::string>> Headers(){
+		throw_if_error(ec_);
 		return headers_;
 	}
 

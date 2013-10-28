@@ -38,17 +38,19 @@ int async_main(cppcomponents::awaiter await){
 	};
 
 
-	easy.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, cppcomponents::make_delegate<Callbacks::WriteFunction>(writer_func));
-	easy.SetPointerOption(Constants::Options::CURLOPT_URL, "https://www.google.com/");
-	easy.SetPointerOption(Constants::Options::CURLOPT_CAINFO, "cacert.pem");
-	easy.SetInt32Option(Constants::Options::CURLOPT_SSL_VERIFYHOST, 2);
-
-
-	await(client.Fetch());
-
+	cppcomponents_libcurl_libuv::Request req("https://www.google.com/");
+	req.CACerts = "cacert.pem";
+	auto response = await(client.Fetch(req));
+	std::string str;
+	if (response.ErrorCode() < 0){
+		str = "Error: " + response.ErrorMessage().to_string();
+	}
+	else{
+		str = response.Body().to_string();
+	}
 
 	exec.MakeLoopExit();
-	std::cerr << "Completed successfully\n";
+	std::cerr << str<< "\n";
 	return 0;
 
 }

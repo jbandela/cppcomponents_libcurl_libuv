@@ -69,8 +69,10 @@ namespace cppcomponents_libcurl_libuv{
 
 		cppcomponents::cr_string GetErrorDescription();
 
+		void Reset();
+
 		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption,StorePrivate,GetPrivate,RemovePrivate, GetNative,
-			GetInt32Info,GetDoubleInfo,GetStringInfo,GetListInfo,GetErrorDescription);
+			GetInt32Info,GetDoubleInfo,GetStringInfo,GetListInfo,GetErrorDescription, Reset);
 
 	};
 	inline std::string easy_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }
@@ -79,11 +81,13 @@ namespace cppcomponents_libcurl_libuv{
 
 	struct IResponse :cppcomponents::define_interface<cppcomponents::uuid<0xd919e330, 0x7ec6, 0x4e7a, 0xa6a7, 0xaedf0b98dc73>>
 	{
+		cppcomponents::error_code ErrorCode();
+		cppcomponents::cr_string ErrorMessage();
 		cppcomponents::use<IEasy> Request();
 		cppcomponents::cr_string Body();
 		std::vector<std::pair<std::string, std::string>> Headers();
 
-		CPPCOMPONENTS_CONSTRUCT(IResponse, Request, Body, Headers);
+		CPPCOMPONENTS_CONSTRUCT(IResponse, ErrorCode, ErrorMessage, Request, Body, Headers);
 	};
 
 	struct IResponseWriter :cppcomponents::define_interface<cppcomponents::uuid<0x826baf64, 0x1e2e, 0x401e, 0xbccc, 0x14227dda0fbe>>
@@ -92,7 +96,9 @@ namespace cppcomponents_libcurl_libuv{
 
 		void AddToHeader(const char* first, const char* last);
 
-		CPPCOMPONENTS_CONSTRUCT(IResponseWriter, AddToBody, AddToHeader);
+		void SetError(cppcomponents::error_code ec);
+
+		CPPCOMPONENTS_CONSTRUCT(IResponseWriter, AddToBody, AddToHeader, SetError);
 
 	};
 
@@ -135,45 +141,6 @@ namespace cppcomponents_libcurl_libuv{
 	typedef cppcomponents::runtime_class<curlstatics_id, cppcomponents::static_interfaces<ICurlStatics>> Curl_t;
 	typedef cppcomponents::use_runtime_class<Curl_t> Curl;
 
-
-
-	struct Request{
-		
-		std::string Url;
-		std::string Method;
-		std::vector<std::pair<std::string, std::string>> Headers;
-		std::string Body;
-		std::string Username;
-		std::string Password;
-		std::string AuthMode;
-		float ConnectTimeout;
-		float RequestTimeout;
-
-		bool FollowRedirects;
-		int MaxRedirects;
-		std::string UserAgent;
-		bool UseGzip;
-		std::string NetworkInterface;
-		std::string ProxyHost;
-		int ProxyPort;
-		std::string ProxyUsername;
-		std::string ProxyPassword;
-		bool AllowNowStandardMethods;
-		bool ValidateCert;
-		std::string CACerts;
-		bool AllowIPv6;
-		std::string ClientKey;
-		std::string ClientCert;
-
-
-		cppcomponents::Channel<cppcomponents::use<cppcomponents::IBuffer>> StreamingChannel;
-		cppcomponents::Channel<cppcomponents::use<cppcomponents::IBuffer>> HeaderChannel;
-		cppcomponents::Channel<std::tuple<double, double, double, double>> ProgressChannel;
-
-
-	};
-
-	
 
 
 	namespace Callbacks{
