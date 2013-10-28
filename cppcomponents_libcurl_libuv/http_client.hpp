@@ -41,9 +41,16 @@ namespace cppcomponents_libcurl_libuv{
 		cppcomponents::Channel<cppcomponents::use<cppcomponents::IBuffer>> HeaderChannel;
 		cppcomponents::Channel<std::tuple<double, double, double, double>> ProgressChannel;
 
-		Request(){}
-		Request(const std::string& url) :Url{ url }{}
-		Request(const char* url) :Url{ url }{}
+
+
+		Request(){ Initialize(); }
+		Request(const std::string& url) :Url{ url }{ Initialize(); }
+		Request(const char* url) :Url{ url }{ Initialize(); }
+
+	private:
+		void Initialize(){
+			CACerts = "cacert.pem";
+		}
 	};
 	struct HttpClient{
 	private:
