@@ -242,6 +242,14 @@ template<class Delegate>
 
 			 throw error_invalid_arg();
 		 }
+		 if (option == CURLOPT_HTTPPOST){
+			 auto pb = static_cast<portable_base*>(parameter);
+			 use<InterfaceUnknown> iunk{cppcomponents::reinterpret_portable_base<InterfaceUnknown>(pb),true};
+			 form_ = iunk.QueryInterface<IForm>();
+			 auto res = curl_easy_setopt(easy_, static_cast<CURLoption>(option), static_cast<void*>(form_.GetNative()));
+			 curl_throw_if_error(res);
+
+		 }
 		 auto res = curl_easy_setopt(easy_, static_cast<CURLoption>(option), parameter);
 		 curl_throw_if_error(res);
 
@@ -739,6 +747,7 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 
 	void* IImp_GetImp(){
 		return this;
+
 	}
 };
 

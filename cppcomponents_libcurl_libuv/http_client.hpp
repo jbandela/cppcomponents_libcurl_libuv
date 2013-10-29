@@ -132,6 +132,36 @@ namespace cppcomponents_libcurl_libuv{
 			easy.SetFunctionOption(Constants::Options::CURLOPT_HEADERFUNCTION, nullptr);
 			easy.SetFunctionOption(Constants::Options::CURLOPT_PROGRESSFUNCTION, nullptr);
 		}
+
+		void HanderWriteFunction(const Request& req){
+			easy_.SetPointerOption(Constants::Options::CURLOPT_URL, const_cast<char*>(req.Url.c_str()));
+			cppcomponents::use<Callbacks::WriteFunction> writer_func;
+			if (req.StreamingChannel){
+				auto chan = req.StreamingChannel;
+				auto func = [chan](char* p, std::size_t n, std::size_t nmemb) mutable -> std::size_t{
+					auto sz = n*nmemb;
+					auto buffer = cppcomponents::Buffer::Create(sz);
+					buffer.SetSize(sz);
+					std::copy(p, p + sz, buffer.Begin());
+					chan.Write(buffer);
+					return sz;
+				};
+
+				writer_func = cppcomponents::make_delegate<Callbacks::WriteFunction>(func);
+
+			}
+			else{
+				auto response_writer = response_.as<IResponseWriter>();
+				auto func = [response_writer](char* p, std::size_t n, std::size_t nmemb) mutable -> std::size_t{
+					auto sz = n*nmemb;
+					response_writer.AddToBody(p, p + sz);
+					return sz;
+				};
+				writer_func = cppcomponents::make_delegate<Callbacks::WriteFunction>(func);
+			}
+
+			easy_.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, writer_func);
+		}
 	public:
 		HttpClient(cppcomponents::use<IMulti> m) :multi_{ m }, easy_{}, response_{ easy_ }
 		{}
@@ -180,37 +210,22 @@ namespace cppcomponents_libcurl_libuv{
 		cppcomponents::Future<cppcomponents::use<IResponse>> Fetch(const Request& req){
 			easy_.Reset();
 			if (!req.Url.size()){ throw cppcomponents::error_invalid_arg(); }
-			easy_.SetPointerOption(Constants::Options::CURLOPT_URL, const_cast<char*>(req.Url.c_str()));
-			cppcomponents::use<Callbacks::WriteFunction> writer_func;
-			if (req.StreamingChannel){
-				auto chan = req.StreamingChannel;
-				 auto func = [chan](char* p, std::size_t n, std::size_t nmemb) mutable -> std::size_t{
-					auto sz = n*nmemb;
-					auto buffer = cppcomponents::Buffer::Create(sz);
-					buffer.SetSize(sz);
-					std::copy(p, p + sz, buffer.Begin());
-					chan.Write(buffer);
-					return sz;
-				};
-
-				 writer_func = cppcomponents::make_delegate<Callbacks::WriteFunction>(func);
-
-			}
-			else{
-				auto response_writer = response_.as<IResponseWriter>();
-				 auto func = [response_writer](char* p, std::size_t n, std::size_t nmemb) mutable -> std::size_t{
-					auto sz = n*nmemb;
-					response_writer.AddToBody(p, p + sz);
-					return sz;
-				};
-				 writer_func = cppcomponents::make_delegate<Callbacks::WriteFunction>(func);
-			}
-
-			easy_.SetFunctionOption(Constants::Options::CURLOPT_WRITEFUNCTION, writer_func);
+			HanderWriteFunction(req);
 			HandleCertificates(req);
 			return Fetch();
 		}
 
+		cppcomponents::Future<cppcomponents::use<IResponse>> Fetch(const Request& req, cppcomponents::use<IForm> form){
+			easy_.Reset();
+			if (!req.Url.size()){ throw cppcomponents::error_invalid_arg(); }
+			if ( (!req.Method.empty()) ||  (req.Method != "POST")){
+				throw cppcomponents::error_invalid_arg();
+			}
+			easy_.SetPointerOption(Constants::Options::CURLOPT_HTTPPOST, form.get_portable_base());
+			HanderWriteFunction(req);
+			HandleCertificates(req);
+			return Fetch();
+		}
 
 
 	};
