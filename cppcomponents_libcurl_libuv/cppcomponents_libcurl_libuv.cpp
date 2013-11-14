@@ -58,6 +58,8 @@ struct ImpSlist :implement_runtime_class<ImpSlist, Slist_t>{
 	}
 };
 
+CPPCOMPONENTS_REGISTER(ImpSlist);
+
 struct ImpForm :implement_runtime_class<ImpForm, Form_t>{
 
 	curl_httppost* first_;
@@ -152,6 +154,8 @@ struct ImpForm :implement_runtime_class<ImpForm, Form_t>{
 		return first_;
 	}
 };
+
+CPPCOMPONENTS_REGISTER(ImpForm)
 
 template<class Delegate>
  use<cppcomponents::delegate<Delegate>> DelegateFromVoid(void* userdata){
@@ -413,6 +417,7 @@ template<class Delegate>
 
 };
 
+CPPCOMPONENTS_REGISTER(ImpEasy)
 
 
 inline std::string multi_id(){ return "cppcomponents_libcurl_libuv_dll!Multi"; }
@@ -487,6 +492,7 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 
 
 };
+CPPCOMPONENTS_REGISTER(ImpResponse)
 
 
 struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
@@ -670,12 +676,16 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 			curl_multi_cleanup(multi);
 			multi = nullptr;
 			exec.MakeLoopExit();
+			exec = nullptr;
 		});
 		if (own_executor_){
-
 			thread_.join();
 		}
-		int i = 0;
+		auto i = exec.NumPendingClosures();
+		for (; i > 0; i = exec.NumPendingClosures()){
+			exec.RunQueuedClosures();
+		}
+		exec = nullptr;
 		delete this;
 	}
 	~ImpMulti(){
@@ -751,6 +761,7 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 	}
 };
 
+CPPCOMPONENTS_REGISTER(ImpMulti)
 
 struct curl_freer{
 	void* p_;
@@ -799,6 +810,7 @@ struct ImpCurlStatics : implement_runtime_class<ImpCurlStatics, Curl_t>
 
 };
 
+CPPCOMPONENTS_REGISTER(ImpCurlStatics)
 
 struct CurlInit{
 	CurlInit(){
@@ -810,6 +822,7 @@ struct CurlInit{
 	}
 };
 
+CurlInit curlinit_;
 
 
 CPPCOMPONENTS_DEFINE_FACTORY()
