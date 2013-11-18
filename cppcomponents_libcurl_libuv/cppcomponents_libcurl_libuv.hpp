@@ -99,7 +99,7 @@ namespace cppcomponents_libcurl_libuv{
 
 		CPPCOMPONENTS_INTERFACE_EXTRAS(IResponse){
 			std::int32_t ResponseCode(){
-				return this->get_interface()->Request().GetIn32Info(Constants::Info::CURLINFO_RESPONSE_CODE);
+				return this->get_interface().Request().GetInt32Info(Constants::Info::CURLINFO_RESPONSE_CODE);
 			}
 
 		};

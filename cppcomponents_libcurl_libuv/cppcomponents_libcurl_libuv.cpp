@@ -383,13 +383,13 @@ template<class Delegate>
 		 long result{};
 		 auto res = curl_easy_getinfo(easy_, static_cast<CURLINFO>(info), &result);
 		 curl_throw_if_error(res);
-		 return res;
+		 return result;
 	 }
 	 double GetDoubleInfo(std::int32_t info){
 		 double result{};
 		 auto res = curl_easy_getinfo(easy_, static_cast<CURLINFO>(info), &result);
 		 curl_throw_if_error(res);
-		 return res;
+		 return result;
 
 	 }
 	 cppcomponents::cr_string GetStringInfo(std::int32_t info){
@@ -587,9 +587,35 @@ struct ImpMulti :implement_runtime_class<ImpMulti, Multi_t>
 
 			auto pthis = static_cast<ImpMulti*>(userp);
 			auto& timeout = pthis->timeout_;
-			if (timeout_ms <= 0)
-				timeout_ms = 1; /* 0 means directly call socket_action, but we'll do it in
-								a bit */
+            if (timeout_ms <= 0){
+                int running_handles;
+                curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0,
+                    &running_handles);
+                int pending = 0;
+                CURLMsg * message = nullptr;
+                while ((message = curl_multi_info_read(pthis->multi_, &pending))) {
+
+
+                    switch (message->msg) {
+                    case CURLMSG_DONE:
+                    {
+
+                                         auto easy = message->easy_handle;
+                                         auto ieasy = ieasy_from_easy(easy);
+
+                                         pthis->RemoveAndCallCallback(ieasy, message->data.result);
+
+                    }
+
+                        break;
+                    default:
+                        fprintf(stderr, "CURLMSG default\n");
+                        abort();
+                    }
+                }
+                return;
+            }
+
 			timeout.Start([multi](use<uv::ITimer>, int status){
 				int running_handles;
 				curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0,

@@ -21,12 +21,25 @@ namespace{
 #include <cppcomponents/loop_executor.hpp>
 
 #include <iostream>
+#include <assert.h>
 
 using namespace cppcomponents_libcurl_libuv;
 
+bool test_get(cppcomponents::awaiter await){
+
+    HttpClient client;
+    Request req("http://httbin.org/get");
+    //req.ConnectTimeout = 5;
+    //req.RequestTimeout = 10;
+    auto response = await(client.Fetch(req));
+
+    auto str = response.ErrorMessage();
+
+    return true;
+}
 
 int async_main(cppcomponents::awaiter await){
-
+    await(cppcomponents::resumable(test_get)());
     cppcomponents_libcurl_libuv::HttpClient client;
     auto response = await(client.Fetch("https://www.google.com/"));
     std::string str;
@@ -37,6 +50,7 @@ int async_main(cppcomponents::awaiter await){
         str = response.Body().to_string();
 
     }
+    auto rc = response.ResponseCode();
     auto headers = response.Headers();
     return 0;
 
