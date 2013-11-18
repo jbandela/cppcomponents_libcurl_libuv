@@ -459,12 +459,18 @@ struct ImpResponse :implement_runtime_class<ImpResponse, Response_t>
 	}
 
 	void IResponseWriter_AddToHeader(const char* first, const char* last){
+        if ((last - first) == 2){
+            if (*first == '\r' && *(first + 1) == '\n'){
+                return;
+            }
+        }
 		auto colon = std::find(first, last, ':');
 		std::string name{ first, colon };
 		if (colon != last){
 			++colon;
 		}
-		std::string value{ colon, last };
+        static char rn[] = { '\r', '\n' }; 
+		std::string value{ colon, std::search(colon,last,rn,rn+2) };
 		headers_.push_back(std::make_pair(name, value));
 	}
 	
