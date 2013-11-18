@@ -248,10 +248,25 @@ template<class Delegate>
 		 }
 		 if (option == CURLOPT_HTTPPOST){
 			 auto pb = static_cast<portable_base*>(parameter);
-			 use<InterfaceUnknown> iunk{cppcomponents::reinterpret_portable_base<InterfaceUnknown>(pb),true};
+			 use<InterfaceUnknown> iunk{ cppcomponents::reinterpret_portable_base<InterfaceUnknown>(pb), true };
 			 form_ = iunk.QueryInterface<IForm>();
 			 auto res = curl_easy_setopt(easy_, static_cast<CURLoption>(option), static_cast<void*>(form_.GetNative()));
 			 curl_throw_if_error(res);
+
+		 }
+		 else if (option == CURLOPT_HEADER){
+			 if (parameter == nullptr){
+				 auto res = curl_easy_setopt(easy_, static_cast<CURLoption>(option), nullptr);
+				 curl_throw_if_error(res);
+
+			 }
+			 else{
+				 auto pb = static_cast<portable_base*>(parameter);
+				 use<InterfaceUnknown> iunk{ cppcomponents::reinterpret_portable_base<InterfaceUnknown>(pb), true };
+				 auto slist = iunk.QueryInterface<ISlist>();
+				 auto res = curl_easy_setopt(easy_, static_cast<CURLoption>(option), static_cast<void*>(slist.GetNative()));
+				 curl_throw_if_error(res);
+			 }
 
 		 }
 		 auto res = curl_easy_setopt(easy_, static_cast<CURLoption>(option), parameter);

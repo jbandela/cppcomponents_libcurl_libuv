@@ -74,6 +74,14 @@ namespace cppcomponents_libcurl_libuv{
 		CPPCOMPONENTS_CONSTRUCT(IEasy, SetInt32Option, SetPointerOption, SetInt64Option, SetFunctionOption,StorePrivate,GetPrivate,RemovePrivate, GetNative,
 			GetInt32Info,GetDoubleInfo,GetStringInfo,GetListInfo,GetErrorDescription, Reset);
 
+		CPPCOMPONENTS_INTERFACE_EXTRAS(IEasy){
+
+			void SetStringOption(std::int32_t option,cppcomponents::cr_string str){
+				const void* p = str.data();
+				this->get_interface().SetPointerOption(option,
+					const_cast<void*>(p));
+			}
+		};
 	};
 	inline std::string easy_id(){ return "cppcomponents_libcurl_libuv_dll!Easy"; }
 	typedef cppcomponents::runtime_class<easy_id, cppcomponents::object_interfaces<IEasy>> Easy_t;
@@ -88,6 +96,13 @@ namespace cppcomponents_libcurl_libuv{
 		std::vector<std::pair<std::string, std::string>> Headers();
 
 		CPPCOMPONENTS_CONSTRUCT(IResponse, ErrorCode, ErrorMessage, Request, Body, Headers);
+
+		CPPCOMPONENTS_INTERFACE_EXTRAS(IResponse){
+			std::int32_t ResponseCode(){
+				return this->get_interface()->Request().GetIn32Info(Constants::Info::CURLINFO_RESPONSE_CODE);
+			}
+
+		};
 	};
 
 	struct IResponseWriter :cppcomponents::define_interface<cppcomponents::uuid<0x826baf64, 0x1e2e, 0x401e, 0xbccc, 0x14227dda0fbe>>
